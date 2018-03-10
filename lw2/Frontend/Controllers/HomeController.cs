@@ -34,7 +34,7 @@ namespace Frontend.Controllers
                 { "data", (data == null) ? "" : data },
             };
             var content = new FormUrlEncodedContent(dictionary);
-            var response = await httpClient.PostAsync("http://127.0.0.1:5000/api/values", content);
+            var response = await httpClient.PostAsync("http://127.0.0.1:27016/api/values", content); // И в чём тогда смысл конфига? =)
             var result = await response.Content.ReadAsStringAsync();
             return Ok(result);
         }

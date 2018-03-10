@@ -14,13 +14,21 @@ namespace Frontend
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
-        }
-
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .UseUrls("http://127.0.0.1:5001")
+            // https://stackoverflow.com/questions/42892173/hosting-json-available-options
+            // https://docs.microsoft.com/ru-ru/aspnet/core/fundamentals/hosting?tabs=aspnetcore2x
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), @"..\config\")))
+                .AddJsonFile("FrontendConfig.json", optional: false)
                 .Build();
+
+            var host = new WebHostBuilder()
+                .UseKestrel()
+                .UseConfiguration(config)
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseStartup<Startup>()
+                .Build();
+
+            host.Run();
+        }
     }
 }
