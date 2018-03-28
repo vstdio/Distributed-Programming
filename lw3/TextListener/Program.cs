@@ -8,6 +8,8 @@ namespace TextListener
 {
 	class Program
 	{
+		static readonly string _queueExchangeName = "backend-api";
+
 		private static string GetValueFromRedis(string id)
 		{
 			ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
@@ -22,9 +24,9 @@ namespace TextListener
 			{
 				using (IModel channel = connection.CreateModel())
 				{
-					channel.QueueDeclare("hello", false, false, false, null);
+					channel.QueueDeclare(_queueExchangeName, false, false, false, null);
 					var consumer = new QueueingBasicConsumer(channel);
-					channel.BasicConsume("hello", true, consumer);
+					channel.BasicConsume(_queueExchangeName, true, consumer);
 
 					Console.WriteLine(" [*] Waiting for messages. To exit press CTRL+C");
 					while (true)

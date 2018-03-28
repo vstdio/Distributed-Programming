@@ -15,6 +15,7 @@ namespace Backend.Controllers
 	public class ValuesController : Controller
 	{
 		static readonly ConcurrentDictionary<string, string> _data = new ConcurrentDictionary<string, string>();
+		static readonly string _queueExchangeName = "backend-api";
 
 		// GET api/values/<id>
 		[HttpGet("{id}")]
@@ -50,9 +51,9 @@ namespace Backend.Controllers
 			{
 				using (IModel channel = connection.CreateModel())
 				{
-					channel.QueueDeclare("hello", false, false, false, null);
+					channel.QueueDeclare(_queueExchangeName, false, false, false, null);
 					var body = Encoding.UTF8.GetBytes(message);
-					channel.BasicPublish("", "hello", null, body);
+					channel.BasicPublish("", _queueExchangeName, null, body);
 					Console.WriteLine("Message: '" + message + "' sent to RabbitMQ");
 				}
 			}
