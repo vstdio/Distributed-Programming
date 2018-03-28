@@ -18,6 +18,10 @@ start /wait /d Backend dotnet publish --configuration Release
 if %ERRORLEVEL% NEQ 0 (
     goto BuildError
 )
+start /wait /d TextListener dotnet publish --configuration Release
+if %ERRORLEVEL% NEQ 0 (
+    goto BuildError
+)
 
 if exist "%~1" (
     rd /s /q "%~1"
@@ -28,11 +32,13 @@ rem Входной параметр может содержать пробелы
 rem в кавычки
 mkdir "%~1"\Frontend
 mkdir "%~1"\Backend
+mkdir "%~1"\TextListener
 mkdir "%~1"\config
 
 rem Копируем нужные файлы для запуска
 xcopy /q Frontend\bin\Release\netcoreapp2.0\publish "%~1"\Frontend > nul
 xcopy /q Backend\bin\Release\netcoreapp2.0\publish "%~1"\Backend > nul
+xcopy /q TextListener\bin\Release\netcoreapp2.0\publish "%~1"\TextListener > nul
 xcopy /q config "%~1"\config > nul
 xcopy /q run.cmd "%~1" > nul
 xcopy /q stop.cmd "%~1" > nul
