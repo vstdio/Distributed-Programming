@@ -14,16 +14,16 @@ namespace Backend.Controllers
 	[Route("api/[controller]")]
 	public class ValuesController : Controller
 	{
-		static readonly ConcurrentDictionary<string, string> _data = new ConcurrentDictionary<string, string>();
+		//static readonly ConcurrentDictionary<string, string> _data = new ConcurrentDictionary<string, string>();
 		static readonly string _queueExchangeName = "backend-api";
 
 		// GET api/values/<id>
 		[HttpGet("{id}")]
 		public string Get(string id)
 		{
-			string value = null;
-			_data.TryGetValue(id, out value);
-			return value;
+			ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+			IDatabase database = redis.GetDatabase();
+			return database.StringGet(id);
 		}
 
 		// POST api/values
@@ -31,7 +31,7 @@ namespace Backend.Controllers
 		public string Post([FromForm]Models.StringHolder holder)
 		{
 			string id = Guid.NewGuid().ToString();
-			_data[id] = holder.Data;
+			// _data[id] = holder.Data;
 			try
 			{
 				SaveKeyValuePairToRedis(id, holder.Data);
@@ -65,6 +65,13 @@ namespace Backend.Controllers
 			IDatabase database = redis.GetDatabase();
 			database.StringSet(key, value);
 			Console.WriteLine("Pair (" + key + ", " + value + ") saved to redis");
+		}
+
+		private static string GetValueFromRedis(string id)
+		{
+			ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+			IDatabase database = redis.GetDatabase();
+			return database.StringGet(id);
 		}
 	}
 }

@@ -20,6 +20,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 if exist "%~1" (
+    echo "%~1" folder already exists, I'm gonna delete it
     rd /s /q "%~1"
 )
 
