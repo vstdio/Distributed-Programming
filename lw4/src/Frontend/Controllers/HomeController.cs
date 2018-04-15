@@ -9,39 +9,57 @@ using System.Net.Http;
 
 namespace Frontend.Controllers
 {
-    public class HomeController : Controller
-    {
-        private static readonly HttpClient httpClient = new HttpClient();
+	public class HomeController : Controller
+	{
+		private static readonly HttpClient httpClient = new HttpClient();
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+		public IActionResult Index()
+		{
+			return View();
+		}
 
-        [HttpGet]
-        public IActionResult Upload()
-        {
-            return View();
-        }
+		public IActionResult Error()
+		{
+			return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+		}
 
-        [HttpPost]
-        public async Task<IActionResult> Upload(string data)
-        {
-            // TODO: send data in POST request to backend and read returned id value from response
-            var dictionary = new Dictionary<string, string>()
-            {
-                // data can be null but it's better to have empty string i think
-                { "data", (data == null) ? "" : data },
-            };
-            var content = new FormUrlEncodedContent(dictionary);
-            var response = await httpClient.PostAsync("http://127.0.0.1:27016/api/values", content); // И в чём тогда смысл конфига? =)
-            var result = await response.Content.ReadAsStringAsync();
-            return Ok(result);
-        }
+		public IActionResult TextDetails(string id)
+		{
+			string details = SendGetRequest("http://127.0.0.1:27016/api/values/" + id).Result;
+			ViewData["Message"] = details;
+			return View();
+		}
 
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-    }
+		[HttpGet]
+		public IActionResult Upload()
+		{
+			return View();
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> Upload(string data)
+		{
+			var dictionary = new Dictionary<string, string>()
+			{
+				{ "data", data ?? "" },
+			};
+
+			var content = new FormUrlEncodedContent(dictionary);
+			var response = await httpClient.PostAsync("http://127.0.0.1:27016/api/values", content);
+			var result = await response.Content.ReadAsStringAsync();
+
+			return new RedirectResult("http://127.0.0.1:27015/Home/TextDetails/" + result);
+		}
+
+		private async Task<string> SendGetRequest(string requestUri)
+		{
+			var response = await httpClient.GetAsync(requestUri);
+			string value = await response.Content.ReadAsStringAsync();
+			if (response.IsSuccessStatusCode && value != null)
+			{
+				return value;
+			}
+			return response.StatusCode.ToString();
+		}
+	}
 }

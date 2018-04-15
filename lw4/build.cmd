@@ -10,13 +10,15 @@ if %ERRORLEVEL% neq 0 goto OnBuildError
 call :Clear
 
 mkdir build\"%~1"\Frontend
+mkdir build\"%~1"\Frontend\wwwroot
 mkdir build\"%~1"\Backend
-mkdir build\"%~1"\TextListener
+mkdir build\"%~1"\TextRankCalc
 mkdir build\"%~1"\Config
 
 xcopy /q src\Frontend\bin\Release\netcoreapp2.0\publish build\"%~1"\Frontend > nul
+xcopy /q /s src\Frontend\wwwroot build\"%~1"\Frontend\wwwroot > nul
 xcopy /q src\Backend\bin\Release\netcoreapp2.0\publish build\"%~1"\Backend > nul
-xcopy /q src\TextListener\bin\Release\netcoreapp2.0\publish build\"%~1"\TextListener > nul
+xcopy /q src\TextRankCalc\bin\Release\netcoreapp2.0\publish build\"%~1"\TextRankCalc > nul
 xcopy /q src\Config build\"%~1"\Config > nul
 
 call :CreateRunScript
@@ -34,7 +36,7 @@ exit /b 0
 	if %ERRORLEVEL% neq 0 exit /b 1
 	start /wait /d src\Backend dotnet publish --configuration Release
 	if %ERRORLEVEL% neq 0 exit /b 1
-	start /wait /d src\TextListener dotnet publish --configuration Release
+	start /wait /d src\TextRankCalc dotnet publish --configuration Release
 	if %ERRORLEVEL% neq 0 exit /b 1
 	exit /b 0
 
@@ -43,7 +45,7 @@ exit /b 0
 		@echo start redis-server.exe
 		@echo start /d Frontend dotnet Frontend.dll
 		@echo start /d Backend dotnet Backend.dll
-		@echo start /d TextListener dotnet TextListener.dll
+		@echo start /d TextRankCalc dotnet TextRankCalc.dll
 	) > build\%SEMVER_FOLDER_NAME%\run.cmd
 	exit /b 0
 
