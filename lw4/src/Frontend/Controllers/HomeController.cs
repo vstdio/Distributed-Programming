@@ -25,7 +25,7 @@ namespace Frontend.Controllers
 
 		public IActionResult TextDetails(string id)
 		{
-			string details = SendGetRequest("http://127.0.0.1:27016/api/values/" + id).Result;
+			string details = SendGetRequest("http://127.0.0.1:5000/api/values/" + id).Result;
 			ViewData["Message"] = details;
 			return View();
 		}
@@ -45,10 +45,10 @@ namespace Frontend.Controllers
 			};
 
 			var content = new FormUrlEncodedContent(dictionary);
-			var response = await httpClient.PostAsync("http://127.0.0.1:27016/api/values", content);
+			var response = await httpClient.PostAsync("http://127.0.0.1:5000/api/values", content);
 			var result = await response.Content.ReadAsStringAsync();
 
-			return new RedirectResult("http://127.0.0.1:27015/Home/TextDetails/" + result);
+			return new RedirectResult("http://127.0.0.1:5001/Home/TextDetails/" + result);
 		}
 
 		private async Task<string> SendGetRequest(string requestUri)

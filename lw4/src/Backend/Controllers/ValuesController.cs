@@ -73,8 +73,7 @@ namespace Backend.Controllers
 
 		private void SaveKeyValuePairToRedis(string key, string value)
 		{
-			ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-			IDatabase database = redis.GetDatabase();
+			IDatabase database = GetRedisDatabaseConnection();
 			database.StringSet(key, value);
 			Console.WriteLine("Pair (" + key + ", " + value + ") saved to redis");
 		}
