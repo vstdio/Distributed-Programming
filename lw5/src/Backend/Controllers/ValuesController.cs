@@ -10,13 +10,15 @@ namespace Backend.Controllers
 	[Route("api/[controller]")]
 	public class ValuesController : Controller
 	{
+		private static ConnectionMultiplexer RedisConnection => ConnectionMultiplexer.Connect("localhost");
+
 		[HttpGet("{id}")]
 		public IActionResult Get(string id)
 		{
 			IDatabase database = GetRedisDatabaseConnection();
 			for (short i = 0; i < 5; ++i)
 			{
-				string rank = database.StringGet("TextRankGuid_" + id);
+				string rank = database.StringGet("TextRank:" + id);
 				if (rank == null)
 				{
 					Thread.Sleep(200);
@@ -35,8 +37,8 @@ namespace Backend.Controllers
 			string id = Guid.NewGuid().ToString();
 			try
 			{
-				SaveKeyValuePairToRedis("TextContentGuid_" + id, holder.Data);
-				SendMessageToRabbitMQ("TextCreated_" + id);
+				SaveKeyValuePairToRedis("TextContent:" + id, holder.Data);
+				SendMessageToRabbitMQ("TextCreated:" + id);
 			}
 			catch (Exception ex)
 			{
@@ -52,21 +54,15 @@ namespace Backend.Controllers
 			{
 				using (var channel = connection.CreateModel())
 				{
-					channel.QueueDeclare(
-						queue: "backend-api",
-						durable: false,
-						exclusive: false,
-						autoDelete: false,
-						arguments: null);
-
-					var bytes = Encoding.UTF8.GetBytes(message);
+					channel.ExchangeDeclare(
+						exchange: "backend-api",
+						type: "fanout");
+					
 					channel.BasicPublish(
-						exchange: "",
-						routingKey: "backend-api",
+						exchange: "backend-api",
+						routingKey: "",
 						basicProperties: null,
-						body: bytes);
-
-					Console.WriteLine("Message: '" + message + "' sent to RabbitMQ");
+						body: Encoding.UTF8.GetBytes(message));
 				}
 			}
 		}
@@ -75,13 +71,11 @@ namespace Backend.Controllers
 		{
 			IDatabase database = GetRedisDatabaseConnection();
 			database.StringSet(key, value);
-			Console.WriteLine("Pair (" + key + ", " + value + ") saved to redis");
 		}
 
 		private static IDatabase GetRedisDatabaseConnection()
 		{
-			ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-			return redis.GetDatabase();
+			return RedisConnection.GetDatabase();
 		}
 	}
 }
