@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using StackExchange.Redis;
@@ -9,6 +10,7 @@ namespace VowelConsRater
 	class Program
 	{
 		private static ConnectionMultiplexer RedisConnection => ConnectionMultiplexer.Connect("localhost");
+		private static readonly int DATABASE_COUNT = 16;
 
 		private static int CalculateDatabaseId(string key)
 		{
@@ -17,19 +19,12 @@ namespace VowelConsRater
 			{
 				hash += ch;
 			}
-			return hash % 16;
-		}
-
-		private static void SaveDataToRedis(string key, string value, int databaseId = 0)
-		{
-			IDatabase database = RedisConnection.GetDatabase(databaseId);
-			database.StringSet(key, value);
+			return hash % DATABASE_COUNT;
 		}
 
 		public static void Main(string[] args)
 		{
 			Console.WriteLine("VowelConsRater");
-
 			var factory = new ConnectionFactory() { HostName = "localhost" };
 			using (var connection = factory.CreateConnection())
 			{
@@ -61,12 +56,12 @@ namespace VowelConsRater
 						{
 							int vowels = Int32.Parse(splitted[2]);
 							int consonants = Int32.Parse(splitted[3]);
-
 							float rank = (consonants != 0) ? (float)vowels / (float)consonants : float.MaxValue;
 
 							int databaseId = CalculateDatabaseId(splitted[1]);
+							IDatabase database = RedisConnection.GetDatabase(databaseId);
+							database.StringSet("TextRank:" + splitted[1], rank.ToString());
 							Console.WriteLine("Redis database set #" + databaseId + ": " + splitted[1]);
-							SaveDataToRedis("TextRank:" + splitted[1], rank.ToString(), databaseId);
 						}
 					};
 

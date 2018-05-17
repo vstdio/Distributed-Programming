@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
+using System.Collections.Generic;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using StackExchange.Redis;
@@ -21,6 +22,7 @@ namespace VowelConsCounter
 		};
 
 		private static ConnectionMultiplexer RedisConnection => ConnectionMultiplexer.Connect("localhost");
+		private static readonly int DATABASE_COUNT = 16;
 
 		private static int CalculateDatabaseId(string key)
 		{
@@ -29,13 +31,7 @@ namespace VowelConsCounter
 			{
 				hash += ch;
 			}
-			return hash % 16;
-		}
-
-		private static string GetValueFromRedis(string key, int databaseId = 0)
-		{
-			IDatabase database = RedisConnection.GetDatabase(databaseId);
-			return database.StringGet(key);
+			return hash % DATABASE_COUNT;
 		}
 
 		private static void CountVowelsAndConsonants(string text, out int vowels, out int consonants)
@@ -87,23 +83,24 @@ namespace VowelConsCounter
 					consumer.Received += (model, ea) => {
 						var body = ea.Body;
 						var message = Encoding.UTF8.GetString(body);
-						var splitted = message.Split(':');
+						var tokens = message.Split(':');
 
 						Console.WriteLine(message);
 
-						if (splitted.Length == 2 && splitted[0] == "TextRankTask")
+						if (tokens.Length == 2 && tokens[0] == "TextRankTask")
 						{
-							int databaseId = CalculateDatabaseId(splitted[1]);
-							Console.WriteLine("Redis database get #" + databaseId + ": " + splitted[1]);
-							CountVowelsAndConsonants(
-								GetValueFromRedis("TextContent:" + splitted[1], databaseId) ?? "",
-								out int vowels, out int consonants);
+							int databaseId = CalculateDatabaseId(tokens[1]);
+							IDatabase database = RedisConnection.GetDatabase(databaseId);
+							string text = database.StringGet("TextContent:" + tokens[1]);
+							Console.WriteLine("Redis database get #" + databaseId + ": " + tokens[1]);
+
+							CountVowelsAndConsonants(text ?? "", out int vowels, out int consonants);
 
 							channel.BasicPublish(
 								exchange: "vowel-cons-counter",
 								routingKey: "vowel-cons-task",
 								basicProperties: null,
-								body: Encoding.UTF8.GetBytes("VowelConsCounted:" + splitted[1] + ":" + vowels + ":" + consonants));
+								body: Encoding.UTF8.GetBytes("VowelConsCounted:" + tokens[1] + ":" + vowels + ":" + consonants));
 						}
 					};
 
