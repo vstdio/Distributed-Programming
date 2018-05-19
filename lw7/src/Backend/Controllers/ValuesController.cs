@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using Microsoft.AspNetCore.Mvc;
-
-using StackExchange.Redis;
-
 using MessageQueueLib;
+using KeyValuePairStorageLib;
+using StackExchange.Redis;
 
 namespace Backend.Controllers
 {
@@ -13,30 +11,17 @@ namespace Backend.Controllers
 	public class ValuesController : Controller
 	{
 		private static readonly IMessageBroker m_broker = new MessageBroker();
-
-		private static ConnectionMultiplexer RedisConnection => ConnectionMultiplexer.Connect("localhost");
-		private static readonly int DATABASE_COUNT = 16;
+		private static readonly IKeyValuePairStorage m_storage = new KeyValuePairStorage();
 
 		public ValuesController()
 		{
 			m_broker.DeclareExchange("backend-api", ExchangeType.Fanout);
 		}
 
-		private static int CalculateDatabaseId(string key)
-		{
-			int hash = 0;
-			foreach (char ch in key)
-			{
-				hash += ch;
-			}
-			return hash % DATABASE_COUNT;
-		}
-
 		[HttpGet("{id}")]
 		public IActionResult Get(string id)
 		{
-			int databaseId = CalculateDatabaseId(id);
-			IDatabase database = RedisConnection.GetDatabase(databaseId);
+			IDatabase database = m_storage.GetDatabase(id, out int databaseId);
 			Console.WriteLine("Redis database get #" + databaseId + ": " + id);
 
 			for (short i = 0; i < 5; ++i)
@@ -61,11 +46,9 @@ namespace Backend.Controllers
 			string contextId = Guid.NewGuid().ToString();
 			try
 			{
-				int databaseId = CalculateDatabaseId(contextId);
-				Console.WriteLine("Redis database set #" + databaseId + ": " + contextId);
-
-				IDatabase database = RedisConnection.GetDatabase(databaseId);
+				IDatabase database = m_storage.GetDatabase(contextId, out int databaseId);
 				database.StringSet("TextContent:" + contextId, data);
+				Console.WriteLine("Redis database set #" + databaseId + ": " + contextId);
 
 				m_broker.Publish("TextCreated:" + contextId, "backend-api");
 			}
