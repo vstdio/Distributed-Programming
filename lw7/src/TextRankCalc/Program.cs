@@ -1,58 +1,37 @@
 ﻿using System;
-using System.Text;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
+using MessageQueueLib;
 
 namespace TextRankCalc
 {
 	class Program
 	{
-		private static void ProcessReceivedMessage(string message, IModel channel)
-		{
-			var tokens = message.Split(":");
-			if (tokens.Length == 2 && tokens[0] == "TextCreated")
-			{
-				channel.BasicPublish(
-					exchange: "text-rank-tasks",
-					routingKey: "text-rank-task",
-					basicProperties: null,
-					body: Encoding.UTF8.GetBytes("TextRankTask:" + tokens[1]));
-			}
-		}
+		private static readonly IMessageBroker m_broker = new MessageBroker();
 
 		public static void Main(string[] args)
 		{
-			Console.WriteLine("TextRankCalc");
-			var factory = new ConnectionFactory() { HostName = "localhost" };
-			using (var connection = factory.CreateConnection())
+			m_broker.DeclareExchange("backend-api", ExchangeType.Fanout);
+			m_broker.DeclareExchange("text-rank-tasks", ExchangeType.Direct);
+
+			string queueName = m_broker.DeclareQueue();
+			m_broker.BindQueue(
+				queueName: queueName,
+				exchangeName: "backend-api",
+				routingKey: "");
+
+			m_broker.BeginConsume(queueName, (string message) =>
 			{
-				using (var channel = connection.CreateModel())
+				Console.WriteLine(message);
+				var tokens = message.Split(":");
+				if (tokens.Length == 2 && tokens[0] == "TextCreated")
 				{
-					channel.ExchangeDeclare("backend-api", ExchangeType.Fanout);
-					channel.ExchangeDeclare("text-rank-tasks", ExchangeType.Direct);
-
-					string queueName = channel.QueueDeclare().QueueName;
-					channel.QueueBind(
-						queue: queueName,
-						exchange: "backend-api",
-						routingKey: "");
-
-					var consumer = new EventingBasicConsumer(channel);
-					consumer.Received += (model, ea) => {
-						var body = ea.Body;
-						var message = Encoding.UTF8.GetString(body);
-						Console.WriteLine(message);
-						ProcessReceivedMessage(message, channel);
-					};
-
-					channel.BasicConsume(
-						queue: queueName,
-						autoAck: true,
-						consumer: consumer);
-
-					Console.ReadLine();
+					m_broker.Publish(
+						exchangeName: "text-rank-tasks",
+						routingKey: "text-rank-task",
+						message: "TextRankTask:" + tokens[1]);
 				}
-			}
+			});
+
+			Console.ReadLine();
 		}
 	}
 }

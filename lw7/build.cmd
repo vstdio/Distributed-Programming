@@ -52,15 +52,15 @@ exit /b 0
 	(
 		@echo @echo off
 		@echo start redis-server.exe
-		@echo start /d Frontend dotnet Frontend.dll
-		@echo start /d Backend dotnet Backend.dll
-		@echo start /d TextRankCalc dotnet TextRankCalc.dll
+		@echo start "Frontend" /d Frontend dotnet Frontend.dll
+		@echo start "Backend" /d Backend dotnet Backend.dll
+		@echo start "TextRankCalc" /d TextRankCalc dotnet TextRankCalc.dll
                                                                        
 	) > build\%SEMVER_FOLDER_NAME%\run.cmd
        
 	@echo set file=Config\components.txt >> build\%SEMVER_FOLDER_NAME%\run.cmd
 	@echo for /f "tokens=1,2 delims=:" %%%%a in (%%file%%) do ( >> build\%SEMVER_FOLDER_NAME%\run.cmd
-	@echo for /l %%%%i in (1, 1, %%%%b) do start /d %%%%a dotnet %%%%a.dll >> build\%SEMVER_FOLDER_NAME%\run.cmd
+	@echo for /l %%%%i in (1, 1, %%%%b) do start "%%%%a" /d %%%%a dotnet %%%%a.dll >> build\%SEMVER_FOLDER_NAME%\run.cmd
 	@echo ) >> build\%SEMVER_FOLDER_NAME%\run.cmd 
 
 	exit /b 0

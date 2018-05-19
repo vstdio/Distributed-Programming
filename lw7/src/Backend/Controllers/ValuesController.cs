@@ -4,15 +4,23 @@ using System.Threading;
 using Microsoft.AspNetCore.Mvc;
 
 using StackExchange.Redis;
-using RabbitMQ.Client;
+
+using MessageQueueLib;
 
 namespace Backend.Controllers
 {
 	[Route("api/[controller]")]
 	public class ValuesController : Controller
 	{
+		private static readonly IMessageBroker m_broker = new MessageBroker();
+
 		private static ConnectionMultiplexer RedisConnection => ConnectionMultiplexer.Connect("localhost");
 		private static readonly int DATABASE_COUNT = 16;
+
+		public ValuesController()
+		{
+			m_broker.DeclareExchange("backend-api", ExchangeType.Fanout);
+		}
 
 		private static int CalculateDatabaseId(string key)
 		{
@@ -48,7 +56,7 @@ namespace Backend.Controllers
 		}
 
 		[HttpPost]
-		public string Post([FromForm]Models.StringHolder holder)
+		public string Post([FromForm]string data)
 		{
 			string contextId = Guid.NewGuid().ToString();
 			try
@@ -57,35 +65,15 @@ namespace Backend.Controllers
 				Console.WriteLine("Redis database set #" + databaseId + ": " + contextId);
 
 				IDatabase database = RedisConnection.GetDatabase(databaseId);
-				database.StringSet("TextContent:" + contextId, holder.Data);
+				database.StringSet("TextContent:" + contextId, data);
 
-				SendMessageToRabbitMQ("TextCreated:" + contextId);
+				m_broker.Publish("TextCreated:" + contextId, "backend-api");
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine(ex.Message);
 			}
 			return contextId;
-		}
-
-		private void SendMessageToRabbitMQ(string message)
-		{
-			var factory = new ConnectionFactory();
-			using (var connection = factory.CreateConnection())
-			{
-				using (var channel = connection.CreateModel())
-				{
-					channel.ExchangeDeclare(
-						exchange: "backend-api",
-						type: "fanout");
-
-					channel.BasicPublish(
-						exchange: "backend-api",
-						routingKey: "",
-						basicProperties: null,
-						body: Encoding.UTF8.GetBytes(message));
-				}
-			}
 		}
 	}
 }

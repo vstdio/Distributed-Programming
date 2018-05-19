@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Text;
 using System.Collections.Generic;
-
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using StackExchange.Redis;
+using MessageQueueLib;
 
 namespace VowelConsCounter
 {
 	class Program
 	{
+		private static readonly IMessageBroker m_broker = new MessageBroker();
+
 		private static readonly HashSet<char> VOWELS = new HashSet<char>
 		{
 			'a', 'e', 'i', 'o', 'u', 'y'
@@ -57,61 +56,35 @@ namespace VowelConsCounter
 
 		public static void Main(string[] args)
 		{
-			Console.WriteLine("VowelConsCounter");
+			m_broker.DeclareExchange("vowels-cons-counter", ExchangeType.Direct); // для отправки
+			m_broker.DeclareExchange("text-rank-tasks", ExchangeType.Direct); // для получения
 
-			var factory = new ConnectionFactory() { HostName = "localhost" };
-			using (var connection = factory.CreateConnection())
+			m_broker.DeclareQueue("count-task");
+			m_broker.BindQueue(
+				queueName: "count-task",
+				exchangeName: "text-rank-tasks",
+				routingKey: "text-rank-task");
+
+			m_broker.BeginConsume("count-task", (string message) =>
 			{
-				using (var channel = connection.CreateModel())
+				Console.WriteLine(message);
+				var tokens = message.Split(":");
+				if (tokens.Length == 2 && tokens[0] == "TextRankTask")
 				{
-					channel.ExchangeDeclare("text-rank-tasks", ExchangeType.Direct);
+					int databaseId = CalculateDatabaseId(tokens[1]);
+					IDatabase database = RedisConnection.GetDatabase(databaseId);
+					string text = database.StringGet("TextContent:" + tokens[1]);
+					Console.WriteLine("Redis database get #" + databaseId + ": " + tokens[1]);
 
-					channel.QueueDeclare(
-						queue: "count-task",
-						durable: false,
-						exclusive: false,
-						autoDelete: false,
-						arguments: null);
-					channel.QueueBind(
-						queue: "count-task",
-						exchange: "text-rank-tasks",
-						routingKey: "text-rank-task");
-
-					channel.ExchangeDeclare("vowel-cons-counter", ExchangeType.Direct);
-
-					var consumer = new EventingBasicConsumer(channel);
-					consumer.Received += (model, ea) => {
-						var body = ea.Body;
-						var message = Encoding.UTF8.GetString(body);
-						var tokens = message.Split(':');
-
-						Console.WriteLine(message);
-
-						if (tokens.Length == 2 && tokens[0] == "TextRankTask")
-						{
-							int databaseId = CalculateDatabaseId(tokens[1]);
-							IDatabase database = RedisConnection.GetDatabase(databaseId);
-							string text = database.StringGet("TextContent:" + tokens[1]);
-							Console.WriteLine("Redis database get #" + databaseId + ": " + tokens[1]);
-
-							CountVowelsAndConsonants(text ?? "", out int vowels, out int consonants);
-
-							channel.BasicPublish(
-								exchange: "vowel-cons-counter",
-								routingKey: "vowel-cons-task",
-								basicProperties: null,
-								body: Encoding.UTF8.GetBytes("VowelConsCounted:" + tokens[1] + ":" + vowels + ":" + consonants));
-						}
-					};
-
-					channel.BasicConsume(
-						queue: "count-task",
-						autoAck: true,
-						consumer: consumer);
-
-					Console.ReadLine();
+					CountVowelsAndConsonants(text ?? "", out int vowels, out int consonants);
+					m_broker.Publish(
+						message: "VowelConsCounted:" + tokens[1] + ":" + vowels + ":" + consonants,
+						exchangeName: "vowel-cons-counter",
+						routingKey: "vowel-cons-task");
 				}
-			}
+			});
+
+			Console.ReadLine();
 		}
 	}
 }
