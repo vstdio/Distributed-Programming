@@ -26,7 +26,14 @@ namespace Frontend.Controllers
 			{
 				using (var response = await httpClient.GetAsync(url))
 				{
-					return await response.Content.ReadAsStringAsync();
+					if (response.IsSuccessStatusCode)
+					{
+						return await response.Content.ReadAsStringAsync();
+					}
+					else
+					{
+						return response.StatusCode.ToString();
+					}
 				}
 			}
 		}
