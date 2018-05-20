@@ -18,6 +18,19 @@ namespace Backend.Controllers
 			m_broker.DeclareExchange("backend-api", ExchangeType.Fanout);
 		}
 
+		[HttpGet("statistics")]
+		public IActionResult GetStatistics()
+		{
+			IDatabase database = m_storage.GetDatabase();
+			var value = database.StringGet("statistics");
+			if (value.HasValue)
+			{
+				Console.WriteLine("Redis database get #1: statistics");
+				return Ok(value.ToString());
+			}
+			return new NotFoundResult();
+		}
+
 		[HttpGet("{id}")]
 		public IActionResult Get(string id)
 		{

@@ -13,6 +13,11 @@ namespace KeyValuePairStorageLib
 			return RedisConnection.GetDatabase(databaseId);
 		}
 
+		public IDatabase GetDatabase(int id = -1)
+		{
+			return RedisConnection.GetDatabase(id);
+		}
+
 		private int CalculateDatabaseId(string segmentationKey)
 		{
 			int databaseId = 0;
