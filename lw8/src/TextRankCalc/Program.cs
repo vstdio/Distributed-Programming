@@ -9,20 +9,20 @@ namespace TextRankCalc
 
 		public static void Main(string[] args)
 		{
-			m_broker.DeclareExchange("backend-api", ExchangeType.Fanout);
+			m_broker.DeclareExchange("processing-limiter", ExchangeType.Fanout);
 			m_broker.DeclareExchange("text-rank-tasks", ExchangeType.Direct);
 
 			string queueName = m_broker.DeclareQueue();
 			m_broker.BindQueue(
 				queueName: queueName,
-				exchangeName: "backend-api",
+				exchangeName: "processing-limiter",
 				routingKey: "");
 
 			m_broker.BeginConsume(queueName, (string message) =>
 			{
 				Console.WriteLine(message);
 				var tokens = message.Split(":");
-				if (tokens.Length == 2 && tokens[0] == "TextCreated")
+				if (tokens.Length == 3 && tokens[0] == "ProcessingAccepted" && tokens[2] == "true")
 				{
 					m_broker.Publish(
 						exchangeName: "text-rank-tasks",

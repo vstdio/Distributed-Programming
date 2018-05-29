@@ -16,6 +16,8 @@ mkdir build\"%~1"\TextRankCalc
 mkdir build\"%~1"\VowelConsCounter
 mkdir build\"%~1"\VowelConsRater
 mkdir build\"%~1"\TextStatistics
+mkdir build\"%~1"\TextSuccessMarker
+mkdir build\"%~1"\TextProcessingLimiter
 mkdir build\"%~1"\Config
 
 xcopy /q src\Frontend\bin\Release\netcoreapp2.0\publish build\"%~1"\Frontend > nul
@@ -25,6 +27,8 @@ xcopy /q src\TextRankCalc\bin\Release\netcoreapp2.0\publish build\"%~1"\TextRank
 xcopy /q src\VowelConsCounter\bin\Release\netcoreapp2.0\publish build\"%~1"\VowelConsCounter > nul
 xcopy /q src\VowelConsRater\bin\Release\netcoreapp2.0\publish build\"%~1"\VowelConsRater > nul
 xcopy /q src\TextStatistics\bin\Release\netcoreapp2.0\publish build\"%~1"\TextStatistics > nul
+xcopy /q src\TextSuccessMarker\bin\Release\netcoreapp2.0\publish build\"%~1"\TextSuccessMarker > nul
+xcopy /q src\TextProcessingLimiter\bin\Release\netcoreapp2.0\publish build\"%~1"\TextProcessingLimiter > nul
 xcopy /q src\Config build\"%~1"\Config > nul
 
 call :CreateRunScript
@@ -49,7 +53,11 @@ exit /b 0
 	start /wait /d src\VowelConsRater dotnet publish --configuration Release
 	if %ERRORLEVEL% neq 0 exit /b 1
 	start /wait /d src\TextStatistics dotnet publish --configuration Release
-	if %ERRORLEVEL% neq 0 exit /b 1 
+	if %ERRORLEVEL% neq 0 exit /b 1
+        start /wait /d src\TextSuccessMarker dotnet publish --configuration Release
+	if %ERRORLEVEL% neq 0 exit /b 1
+	start /wait /d src\TextProcessingLimiter dotnet publish --configuration Release
+	if %ERRORLEVEL% neq 0 exit /b 1
 	exit /b 0
 
 :CreateRunScript
@@ -60,6 +68,8 @@ exit /b 0
 		@echo start "Backend" /d Backend dotnet Backend.dll
 		@echo start "TextRankCalc" /d TextRankCalc dotnet TextRankCalc.dll
 		@echo start "TextStatistics" /d TextStatistics dotnet TextStatistics.dll
+		@echo start "TextProcessingLimiter" /d TextProcessingLimiter dotnet TextProcessingLimiter.dll
+		@echo start "TextSuccessMarker" /d TextSuccessMarker dotnet TextSuccessMarker.dll
                                                                        
 	) > build\%SEMVER_FOLDER_NAME%\run.cmd
        

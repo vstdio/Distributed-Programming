@@ -50,7 +50,7 @@ namespace Backend.Controllers
 				}
 			}
 
-			return new NotFoundResult();
+			return Ok("Превышен лимит проверок успешного текста");
 		}
 
 		[HttpPost]

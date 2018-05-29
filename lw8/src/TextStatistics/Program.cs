@@ -36,10 +36,16 @@ namespace TextStatistics
 			}
 		}
 
-		private static void UpdateStatistics(float newTextRank, Statistics statistics)
+		private static float GetRank(string textId)
+		{
+			IDatabase database = m_storage.GetDatabase(textId, out int databaseId);
+			return float.Parse(database.StringGet("TextRank:" + textId));
+		}
+
+		private static void UpdateStatistics(float newTextRank, string status, Statistics statistics)
 		{
 			++statistics.TextNum;
-			if (newTextRank >= 0.5f)
+			if (status == "true")
 			{
 				++statistics.HighRankPart;
 			}
@@ -52,20 +58,20 @@ namespace TextStatistics
 			Statistics statistics = new Statistics();
 			InitializeStatistics(statistics);
 
-			m_broker.DeclareExchange("text-rank-calc", ExchangeType.Fanout);
-			m_broker.DeclareQueue("text-rank-calc");
+			m_broker.DeclareExchange("text-success-marker", ExchangeType.Fanout);
+			m_broker.DeclareQueue("text-success-marker");
 			m_broker.BindQueue(
-				queueName: "text-rank-calc",
-				exchangeName: "text-rank-calc",
+				queueName: "text-success-marker",
+				exchangeName: "text-success-marker",
 				routingKey: "");
 
-			m_broker.BeginConsume("text-rank-calc", (string message) =>
+			m_broker.BeginConsume("text-success-marker", (string message) =>
 			{
 				Console.WriteLine(message);
 				string[] tokens = message.Split(":");
-				if (tokens.Length == 3 && tokens[0] == "TextRankCalculated")
+				if (tokens.Length == 3 && tokens[0] == "TextSuccessMarked")
 				{
-					UpdateStatistics(float.Parse(tokens[2]), statistics);
+					UpdateStatistics(GetRank(tokens[1]), tokens[2], statistics);
 					IDatabase database = m_storage.GetDatabase();
 					database.StringSet("statistics",
 						statistics.TextNum + ":" + statistics.HighRankPart + ":" +

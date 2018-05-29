@@ -7,22 +7,22 @@ namespace MessageQueueLib
 {
 	public class MessageBroker : IMessageBroker
 	{
-		private readonly ConnectionFactory m_factory;
-		private readonly IConnection m_connection;
-		private readonly IModel m_channel;
+		private readonly ConnectionFactory m_factory = null;
+		private readonly IConnection m_connection = null;
+		private readonly IModel m_channel = null;
+		private readonly EventingBasicConsumer m_consumer = null;
 
 		public MessageBroker()
 		{
 			m_factory = new ConnectionFactory();
 			m_connection = m_factory.CreateConnection();
 			m_channel = m_connection.CreateModel();
+			m_consumer = new EventingBasicConsumer(m_channel);
 		}
 
 		public void BeginConsume(string queueName, Action<string> onRecieveCallback)
 		{
-			var consumer = new EventingBasicConsumer(m_channel);
-
-			consumer.Received += (model, ea) =>
+			m_consumer.Received += (model, ea) =>
 			{
 				onRecieveCallback(Encoding.UTF8.GetString(ea.Body));
 			};
@@ -30,7 +30,7 @@ namespace MessageQueueLib
 			m_channel.BasicConsume(
 				queue: queueName,
 				autoAck: true,
-				consumer: consumer);
+				consumer: m_consumer);
 		}
 
 		public void BindQueue(string queueName, string exchangeName, string routingKey)

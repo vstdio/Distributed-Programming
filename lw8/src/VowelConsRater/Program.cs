@@ -12,8 +12,8 @@ namespace VowelConsRater
 
 		public static void Main(string[] args)
 		{
-			m_broker.DeclareExchange("text-rank-calc", ExchangeType.Fanout);
-			m_broker.DeclareExchange("vowel-cons-counter", ExchangeType.Direct);
+			m_broker.DeclareExchange("text-rank-calc", ExchangeType.Fanout); // output exchange
+			m_broker.DeclareExchange("vowel-cons-counter", ExchangeType.Direct); // input exchange
 
 			m_broker.DeclareQueue("rank-task");
 			m_broker.BindQueue(
@@ -35,7 +35,7 @@ namespace VowelConsRater
 					database.StringSet("TextRank:" + tokens[1], rank.ToString());
 					Console.WriteLine("Redis database set #" + databaseId + ": " + tokens[1]);
 
-					// Оповещаем компонент TextStatistics
+					// Оповещаем компонент TextSuccessMarker
 					m_broker.Publish(
 						message: "TextRankCalculated:" + tokens[1] + ":" + rank,
 						exchangeName: "text-rank-calc");
