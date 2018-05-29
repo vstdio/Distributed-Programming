@@ -29,7 +29,7 @@ namespace VowelConsRater
 				{
 					int vowels = Int32.Parse(tokens[2]);
 					int consonants = Int32.Parse(tokens[3]);
-					float rank = (consonants != 0) ? (float)vowels / (float)consonants : float.MaxValue;
+					float rank = (consonants != 0) ? (float)vowels / (float)consonants : 0.0f;
 
 					IDatabase database = m_storage.GetDatabase(tokens[1], out int databaseId);
 					database.StringSet("TextRank:" + tokens[1], rank.ToString());
