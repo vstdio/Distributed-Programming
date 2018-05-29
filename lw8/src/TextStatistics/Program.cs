@@ -39,7 +39,8 @@ namespace TextStatistics
 		private static float GetRank(string textId)
 		{
 			IDatabase database = m_storage.GetDatabase(textId, out int databaseId);
-			return float.Parse(database.StringGet("TextRank:" + textId));
+			string str = database.StringGet("TextRank:" + textId);
+			return float.Parse(str);
 		}
 
 		private static void UpdateStatistics(float newTextRank, string status, Statistics statistics)

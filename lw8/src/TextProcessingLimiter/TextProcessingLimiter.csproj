@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KeyValuePairStorageLib\KeyValuePairStorageLib.csproj" />
     <ProjectReference Include="..\MessageQueueLib\MessageQueueLib.csproj" />
   </ItemGroup>
 

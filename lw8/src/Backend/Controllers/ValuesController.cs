@@ -50,7 +50,12 @@ namespace Backend.Controllers
 				}
 			}
 
-			return Ok("Превышен лимит проверок успешного текста");
+			string status = database.StringGet("TextStatus:" + id);
+			if (status != null && status == "rejected")
+			{
+				return Ok("Превышен лимит проверок успешного текста");
+			}
+			return new NotFoundResult();
 		}
 
 		[HttpPost]

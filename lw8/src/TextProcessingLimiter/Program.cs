@@ -1,11 +1,14 @@
 ﻿using System;
 using MessageQueueLib;
+using KeyValuePairStorageLib;
+using StackExchange.Redis;
 
 namespace TextProcessingLimiter
 {
 	class Program
 	{
 		private static readonly IMessageBroker m_broker = new MessageBroker();
+		private static readonly IKeyValuePairStorage m_storage = new KeyValuePairStorage();
 
 		private static void Main(string[] args)
 		{
@@ -32,6 +35,7 @@ namespace TextProcessingLimiter
 				var tokens = message.Split(":");
 				if (tokens.Length == 2 && tokens[0] == "TextCreated")
 				{
+					IDatabase database = m_storage.GetDatabase(tokens[1], out int databaseId);
 					if (availableTextCount > 0)
 					{
 						--availableTextCount;
@@ -46,6 +50,7 @@ namespace TextProcessingLimiter
 						m_broker.Publish(
 							message: "ProcessingAccepted:" + tokens[1] + ":false",
 							exchangeName: "processing-limiter");
+						database.StringSet("TextStatus:" + tokens[1], "rejected");
 					}
 				}
 			});
